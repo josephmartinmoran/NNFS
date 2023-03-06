@@ -1,5 +1,7 @@
 import numpy as np
+import math
 import nnfs
+from nnfs.datasets import vertical_data
 
 nnfs.init()
 
@@ -42,6 +44,38 @@ class Activation_ReLU:
 
         # Zero gradient where input values were negative
         self.dinputs[self.dinputs <= 0] = 0
+
+# Softmax activation
+class Activation_Softmax:
+
+    # Forward Pass
+    def forward(self, inputs):
+
+        # Get unnormalized probabilities
+        exp_values = np.exp(inputs - np.max(inputs, axis=1, keepdims=True))
+
+        # Normalize them for each sample
+        probabilities = exp_values / np.sum(exp_values, axis=1, keepdims=True)
+
+        self.output = probabilities
+
+    def backwards(self, dvalues):
+
+        # Create uninitialized array
+        self.dinputs = np.empty_like(dvalues)
+
+        # Enumerate outputs and gradient
+        for index, (single_output, single_dvalues) in \
+                enumerate(zip(self.output,dvalues)):
+            # Flatten output array
+            single_output = single_output.reshape(-1, 1)
+            # Calculate Jacobian Matrix of the outputs
+            jacobian_matrix = np.diagflat(single_output) - \
+                              np.dot(single_output, single_output.T)
+            # Calculate sample-wise gradient
+            # and add it to the array of sample gradients
+            self.dinputs[index] = np.dot(jacobian_matrix, single_dvalues)
+
 
 # Common loss class
 class Loss:
@@ -105,4 +139,3 @@ class Loss_CategoricalCrossentropy(Loss):
         self.dinputs = -y_true / dvalues
         # Normalize gradient
         self.dinputs = self.dinputs / samples
-
