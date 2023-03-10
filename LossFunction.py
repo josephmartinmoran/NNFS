@@ -1,5 +1,4 @@
 import numpy as np
-import math
 import nnfs
 from nnfs.datasets import spiral_data
 
