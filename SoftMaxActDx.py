@@ -8,26 +8,27 @@ nnfs.init()
 # Dense layer
 class Layer_Dense:
 
-     # Layer initialization
-     def __init__(self, n_inputs, n_neurons):
-         # Initialize weights and biases
-         self.weights = 0.01 * np.random.randn(n_inputs, n_neurons)
-         self.biases = np.zeros((1, n_neurons))
+    # Layer initialization
+    def __init__(self, n_inputs, n_neurons):
+        # Initialize weights and biases
+        self.weights = 0.01 * np.random.randn(n_inputs, n_neurons)
+        self.biases = np.zeros((1, n_neurons))
 
-     # Forward pass
-     def forward(self, inputs):
-         # Remember input values
-         self.inputs = inputs
-         # Calculate output values from input ones, weights and biases
-         self.output = np.dot(inputs, self.weights) + self.biases
+    # Forward pass
+    def forward(self, inputs):
+        # Remember input values
+        self.inputs = inputs
+        # Calculate output values from input ones, weights and biases
+        self.output = np.dot(inputs, self.weights) + self.biases
 
     # Backward pass
-     def backward(self, dvalues):
-         # Gradients on parameters
-         self.dweights = np.dot(self.inputs.T, dvalues)
-         self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
-         # Gradient on values
-         self.dinputs = np.dot(dvalues, self.weights.T)
+    def backward(self, dvalues):
+        # Gradients on parameters
+        self.dweights = np.dot(self.inputs.T, dvalues)
+        self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
+        # Gradient on values
+        self.dinputs = np.dot(dvalues, self.weights.T)
+
 
 # ReLU activation
 class Activation_ReLU:
@@ -58,10 +59,10 @@ class Activation_Softmax:
 
         # Get unnormalized probabilities
         exp_values = np.exp(inputs - np.max(inputs, axis=1,
-                                             keepdims=True))
+                                            keepdims=True))
         # Normalize them for each sample
         probabilities = exp_values / np.sum(exp_values, axis=1,
-                                             keepdims=True)
+                                            keepdims=True)
         self.output = probabilities
 
     # Backward pass
@@ -78,7 +79,8 @@ class Activation_Softmax:
                               np.dot(single_output, single_output.T)
             # Calculate sample-wise gradient
             # and add it to the array of sample gradients
-            self.dinputs[index] = np.dot(jacobian_matrix,single_dvalues)
+            self.dinputs[index] = np.dot(jacobian_matrix, single_dvalues)
+
 
 # Common loss class
 class Loss:
@@ -86,7 +88,6 @@ class Loss:
     # Calculates the data and regularization losses
     # given model output and ground truth values
     def calculate(self, output, y):
-
         # Calculate sample losses
         sample_losses = self.forward(output, y)
 
@@ -95,6 +96,7 @@ class Loss:
 
         # Return loss
         return data_loss
+
 
 # Cross-entropy loss
 class Loss_CategoricalCrossentropy(Loss):
@@ -144,6 +146,7 @@ class Loss_CategoricalCrossentropy(Loss):
         # Normalize gradient
         self.dinputs = self.dinputs / samples
 
+
 # Softmax classifier - combined Softmax activation
 # and cross-entropy loss for faster backward step
 class Activation_Softmax_Loss_CategoricalCrossentropy():
@@ -178,6 +181,7 @@ class Activation_Softmax_Loss_CategoricalCrossentropy():
         self.dinputs[range(samples), y_true] -= 1
         # Normalize gradient
         self.dinputs = self.dinputs / samples
+
 
 # Create dataset
 X, y = spiral_data(samples=100, classes=3)
