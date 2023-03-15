@@ -1,3 +1,14 @@
+# Learning Rate Decay
+
+# starting_learning_rate = 1.
+# learning_rate_decay = 0.1
+#
+# for step in range(20):
+#     learning_rate = starting_learning_rate * \
+#                     (1. / (1 + learning_rate_decay *step))
+#     print(learning_rate)
+#
+
 import numpy as np
 import nnfs
 from nnfs.datasets import spiral_data
@@ -188,13 +199,26 @@ class Optimizer_SGD:
 
     # Initialize Optimizer - set settings
     # learning rate of 1 is default for this optimizer
-    def __init__(self, learning_rate=1.0):
+    def __init__(self, learning_rate=1.0, decay=0):
         self.learning_rate = learning_rate
+        self.current_learning_rate = learning_rate
+        self.decay = decay
+        self.iterations = 0
+
+    # Call once before any parameter updates
+    def pre_update_params(self):
+        if self.decay:
+            self.current_learning_rate = self.learning_rate * \
+                (1. / (1. + self.decay * self.iterations))
 
     # Update parameters
     def update_params(self, layer):
-        layer.weights += -self.learning_rate * layer.dweights
-        layer.biases += -self.learning_rate * layer.dbiases
+        layer.weights += -self.current_learning_rate * layer.dweights
+        layer.biases += -self.current_learning_rate * layer.dbiases
+
+    # Call once after any parameter updates
+    def post_update_params(self):
+        self.iterations += 1
 
 # Create dataset
 X, y = spiral_data(samples=100, classes=3)
@@ -213,7 +237,7 @@ dense2 = Layer_Dense(64, 3)
 loss_activation = Activation_Softmax_Loss_CategoricalCrossentropy()
 
 # Create optimizer
-optimizer = Optimizer_SGD()
+optimizer = Optimizer_SGD(decay=1e-3)
 
 # Train in loop
 for epoch in range(10001):
@@ -243,7 +267,8 @@ for epoch in range(10001):
     if not epoch % 100:
         print(f'epoch: {epoch}, ' +
               f'acc: {accuracy:.3f}, ' +
-              f'loss: {loss:.3f}')
+              f'loss: {loss:.3f}, ' +
+              f'lr: {optimizer.current_learning_rate}')
 
     # Backward pass
     loss_activation.backward(loss_activation.output, y)
@@ -252,5 +277,7 @@ for epoch in range(10001):
     dense1.backward(activation1.dinputs)
 
     # Update weights and biases
+    optimizer.pre_update_params()
     optimizer.update_params(dense1)
     optimizer.update_params(dense2)
+    optimizer.post_update_params()
