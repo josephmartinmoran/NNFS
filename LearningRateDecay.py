@@ -58,7 +58,7 @@ class Activation_ReLU:
         self.dinputs = dvalues.copy()
 
         # Zero gradient where input values were negative
-        self.dinputs[self.dinputs <= 0] = 0
+        self.dinputs[self.inputs <= 0] = 0
 
 
 class Activation_Softmax:
@@ -129,7 +129,7 @@ class Loss_CategoricalCrossentropy(Loss):
                 range(samples),
                 y_true
             ]
-            # Mask values - only for one-hot encoded labels
+        # Mask values - only for one-hot encoded labels
         elif len(y_true.shape) == 2:
             correct_confidences = np.sum(
                 y_pred_clipped * y_true,

@@ -47,7 +47,7 @@ class Activation_ReLU:
         self.dinputs = dvalues.copy()
 
         # Zero gradient where input values were negative
-        self.dinputs[self.dinputs <= 0] = 0
+        self.dinputs[self.inputs <= 0] = 0
 
 
 class Activation_Softmax:
@@ -67,8 +67,10 @@ class Activation_Softmax:
 
     # Backward pass
     def backward(self, dvalues):
+
         # Create uninitialized array
         self.dinputs = np.empty_like(dvalues)
+
         # Enumerate outputs and gradients
         for index, (single_output, single_dvalues) in \
                 enumerate(zip(self.output, dvalues)):
@@ -79,7 +81,8 @@ class Activation_Softmax:
                               np.dot(single_output, single_output.T)
             # Calculate sample-wise gradient
             # and add it to the array of sample gradients
-            self.dinputs[index] = np.dot(jacobian_matrix, single_dvalues)
+            self.dinputs[index] = np.dot(jacobian_matrix,
+                                         single_dvalues)
 
 
 # Common loss class
@@ -88,6 +91,7 @@ class Loss:
     # Calculates the data and regularization losses
     # given model output and ground truth values
     def calculate(self, output, y):
+
         # Calculate sample losses
         sample_losses = self.forward(output, y)
 
@@ -118,12 +122,14 @@ class Loss_CategoricalCrossentropy(Loss):
                 range(samples),
                 y_true
             ]
-            # Mask values - only for one-hot encoded labels
+
+        # Mask values - only for one-hot encoded labels
         elif len(y_true.shape) == 2:
             correct_confidences = np.sum(
                 y_pred_clipped * y_true,
                 axis=1
             )
+
         # Losses
         negative_log_likelihoods = -np.log(correct_confidences)
         return negative_log_likelihoods
@@ -167,6 +173,7 @@ class Activation_Softmax_Loss_CategoricalCrossentropy():
 
     # Backward pass
     def backward(self, dvalues, y_true):
+
         # Number of samples
         samples = len(dvalues)
 
