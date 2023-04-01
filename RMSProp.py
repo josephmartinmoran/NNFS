@@ -1,6 +1,5 @@
-# AdaGrad = Adaptive Gradient
-# cache += parm_gradient ** 2
-# parm_updates = learning_rate * parm_gradient / (sqrt(cache) + eps)
+# Root Mean Square Propagation
+# cache = rho * cache + (1 - rho) * gradient ** 2
 
 import numpy as np
 import nnfs
@@ -291,6 +290,52 @@ class Optimizer_Adagrad:
     def post_update_params(self):
         self.iterations += 1
 
+# RMSprop optimizer
+class Optimizer_RMSprop:
+
+    # Initialize Optimizer - set settings
+    def __init__(self, learning_rate=0.001, decay=0., epsilon=1e-7,
+                 rho=0.9):
+        self.learning_rate = learning_rate
+        self.current_learning_rate = learning_rate
+        self.decay = decay
+        self.iterations = 0
+        self.epsilon = epsilon
+        self.rho = rho
+
+    # Call once before any parameters updates
+    def pre_update_params(self):
+        if self.decay:
+            self.current_learning_rate = self.learning_rate * \
+                (1. / (1. + self.decay * self.iterations))
+
+    # Update parameters
+    def update_params(self, layer):
+
+        # If layer does not contain cache arrays create them and fill with zeros
+        if not hasattr(layer, 'weight_cache'):
+            layer.weight_cache = np.zeros_like(layer.weights)
+            layer.bias_cache = np.zeros_like(layer.biases)
+
+        # update cache with squared current gradients
+        layer.weight_cache = self.rho * layer.weight_cache + \
+            (1 - self.rho) * layer.dweights**2
+        layer.bias_cache = self.rho * layer.bias_cache + \
+            (1 - self.rho) * layer.dbiases**2
+
+        # Vanilla SGD parameter update + normalization with square rooted cache
+        layer.weights += -self.current_learning_rate * \
+                         layer.dweights / \
+                         (np.sqrt(layer.weight_cache) + self.epsilon)
+        layer.biases += -self.current_learning_rate * \
+                        layer.dbiases / \
+                        (np.sqrt(layer.bias_cache) + self.epsilon)
+
+    # Call once after any parameter update
+    def post_update_params(self):
+        self.iterations += 1
+
+
 # Create dataset
 X, y = spiral_data(samples=100, classes=3)
 
@@ -308,7 +353,7 @@ dense2 = Layer_Dense(64, 3)
 loss_activation = Activation_Softmax_Loss_CategoricalCrossentropy()
 
 # Create optimizer
-optimizer = Optimizer_Adagrad(decay=1e-4)
+optimizer = Optimizer_RMSprop(learning_rate=0.02, decay=1e-5, rho=0.999)
 
 # Train in loop
 for epoch in range(10001):

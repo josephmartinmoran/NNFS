@@ -203,7 +203,7 @@ class Optimizer_SGD:
     def pre_update_params(self):
         if self.decay:
             self.current_learning_rate = self.learning_rate * \
-                                         (1. / (1. + self.decay * self.iterations))
+                (1. / (1. + self.decay * self.iterations))
 
     # Update parameters
     def update_params(self, layer):
@@ -219,7 +219,7 @@ class Optimizer_SGD:
                 layer.bias_momentums = np.zeros_like(layer.biases)
 
                 # Build weight updates with momentum
-                # Take previous updates multiplied by retain factor and update with current gradients
+                # Take previous updates multiplied by retrain factor and update with current gradients
                 weight_updates = \
                     self.momentum * layer.weight_momentums - \
                     self.current_learning_rate * layer.dweights
