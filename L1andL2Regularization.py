@@ -61,7 +61,7 @@ class Layer_Dense:
             self.dweights += self.weight_regularizer_l1 * dL1
         # L2 on weights
         if self.weight_regularizer_l2 > 0:
-            self.weights += 2 * self.weight_regularizer_l2 * \
+            self.dweights += 2 * self.weight_regularizer_l2 * \
                             self.weights
         # L1 on biases
         if self.bias_regularizer_l1 > 0:
@@ -114,6 +114,7 @@ class Activation_Softmax:
 
     # Backward pass
     def backward(self, dvalues):
+
         # Create uninitialized array
         self.dinputs = np.empty_like(dvalues)
 
@@ -147,7 +148,7 @@ class Optimizer_SGD:
     def pre_update_params(self):
         if self.decay:
             self.current_learning_rate = self.learning_rate * \
-                                         (1. / (1. + self.decay * self.iterations))
+                (1. / (1. + self.decay * self.iterations))
 
     # Update parameters
     def update_params(self, layer):
@@ -175,21 +176,20 @@ class Optimizer_SGD:
                     self.current_learning_rate * layer.dbiases
                 layer.bias_momentums = bias_updates
 
-            # Vanilla SGD updates (as before momentum update)
-            else:
-                weight_updates = -self.current_learning_rate * \
-                                 layer.dweights
-                bias_updates = -self.current_learning_rate * \
-                               layer.dbiases
+        # Vanilla SGD updates (as before momentum update)
+        else:
+            weight_updates = -self.current_learning_rate * \
+                            layer.dweights
+            bias_updates = -self.current_learning_rate * \
+                            layer.dbiases
 
-            # Update weights and biases using either vanilla or momentum updates
-            layer.weights += weight_updates
-            layer.biases += bias_updates
+        # Update weights and biases using either vanilla or momentum updates
+        layer.weights += weight_updates
+        layer.biases += bias_updates
 
     # Call once after any parameter updates
     def post_update_params(self):
         self.iterations += 1
-
 
 # Adagrad optimizer
 class Optimizer_Adagrad:
@@ -368,8 +368,7 @@ class Loss:
         # L2 regularization - weights
         if layer.weight_regularizer_l2 > 0:
             regularization_loss += layer.weight_regularizer_l2 * \
-                                   np.sum(layer.weights *
-                                          layer.weights)
+                                   np.sum(layer.weights * layer.weights)
 
         # L1 regularization - biases
         # Calculate only when factor greater than 0
@@ -380,14 +379,14 @@ class Loss:
         # L2 regularization - biases
         if layer.bias_regularizer_l2 > 0:
             regularization_loss += layer.bias_regularizer_l2 * \
-                                   np.sum(layer.biases *
-                                          layer.biases)
+                                   np.sum(layer.biases * layer.biases)
 
         return regularization_loss
 
     # Calculates the data and regularization losses
     # given model output and ground truth values
     def calculate(self, output, y):
+
         # Calculate sample losses
         sample_losses = self.forward(output, y)
 
@@ -424,6 +423,7 @@ class Loss_CategoricalCrossentropy(Loss):
                 y_pred_clipped * y_true,
                 axis=1
             )
+
         # Losses
         negative_log_likelihoods = -np.log(correct_confidences)
         return negative_log_likelihoods
@@ -467,6 +467,7 @@ class Activation_Softmax_Loss_CategoricalCrossentropy():
 
     # Backward pass
     def backward(self, dvalues, y_true):
+
         # Number of samples
         samples = len(dvalues)
 
@@ -484,10 +485,10 @@ class Activation_Softmax_Loss_CategoricalCrossentropy():
 
 
 # Create test dataset
-X, y = spiral_data(samples=100, classes=3)
+X, y = spiral_data(samples=1000, classes=3)
 
 # Create Dense layer with 2 input features and 64 output values
-dense1 = Layer_Dense(2, 64, weight_regularizer_l2=5e-4,
+dense1 = Layer_Dense(2, 512, weight_regularizer_l2=5e-4,
                      bias_regularizer_l2=5e-4)
 
 # Create ReLU activation (to be used with Dense layer)
@@ -495,7 +496,7 @@ activation1 = Activation_ReLU()
 
 # Create second Dense layer with 64 input features ( as we take output of previous layer here)
 # and 3 output values (output values)
-dense2 = Layer_Dense(64, 3)
+dense2 = Layer_Dense(512, 3)
 
 # Create Softmax classifier's combined lass and activation
 loss_activation = Activation_Softmax_Loss_CategoricalCrossentropy()
@@ -536,12 +537,13 @@ for epoch in range(10001):
         y = np.argmax(y, axis=1)
     accuracy = np.mean(predictions == y)
 
-    print(f'epoch: {epoch}, ' +
-          f'acc: {accuracy:.3f}, ' +
-          f'loss: {loss:.3f} (' +
-          f'data_loss: {data_loss:.3f}, ' +
-          f'reg_loss: {regularization_loss:.3f}), ' +
-          f'lr: {optimizer.current_learning_rate}')
+    if not epoch % 100:
+        print(f'epoch: {epoch}, ' +
+              f'acc: {accuracy:.3f}, ' +
+              f'loss: {loss:.3f} (' +
+              f'data_loss: {data_loss:.3f}, ' +
+              f'reg_loss: {regularization_loss:.3f}), ' +
+              f'lr: {optimizer.current_learning_rate}')
 
     # Backward pass
     loss_activation.backward(loss_activation.output, y)
@@ -559,23 +561,24 @@ for epoch in range(10001):
 
 # Create test dataset
 X_test, y_test = spiral_data(samples=100, classes=3)
+
 # Perform a forward pass of our testing data through this layer
 dense1.forward(X_test)
 
 # Perform a forward pass through activation function
-# takes the output of the first dense layer here
+# takes the output of first dense layer here
 activation1.forward(dense1.output)
 
 # Perform a forward pass through second Dense layer
-# takes outputs of activation function of first layer as input
+# takes outputs of activation function of first layer as inputs
 dense2.forward(activation1.output)
 
 # Perform a forward pass through the activation/loss function
 # takes the output of second dense layer here and returns loss
 loss = loss_activation.forward(dense2.output, y_test)
 
-# Calculate accuracy from output of activation2 and target
-# Calculate values along first axis
+# Calculate accuracy from output of activation2 and targets
+# calculate values along first axis
 predictions = np.argmax(loss_activation.output, axis=1)
 if len(y_test.shape) == 2:
     y_test = np.argmax(y_test, axis=1)
