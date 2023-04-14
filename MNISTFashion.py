@@ -93,4 +93,4 @@ plt.imshow((X[8].reshape(28, 28))) # Reshape as image is a vector already
 plt.show()
 
 # Check the class at the same index
-print(y[8])
+# print(y[8])
